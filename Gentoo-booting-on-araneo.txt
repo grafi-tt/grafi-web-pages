@@ -1,0 +1,116 @@
+= NetWalkerでGentoo動かすなど
+
+シャープから発表されたMIDであるNetWalkerですが、microSD上のシステムからブート可能という素敵仕様。mtd上のカーネル書き換え、システム総入れ替えは恐いけど、これなら簡単。と言うわけでmicroSD上でGentooを動作させてみました。XFce4入ってサスペンド可能、ネットワークも一応動いてます。
+
+全てNetWalkerでセルフビルドで構築。バッテリーなんかへたれば交換すれば(オイ。数日かける気で気長に行けば我慢できるレベルです。
+
+== 取りあえずフォーマット
+SDがアンマウントされてるのを一応確認してから。
+[source,sh]
+--------------------
+sfdisk /dev/mmcblk -uM << EOS
+0,,L
+EOS
+mkfs -t ext3 /dev/mmcblkp1
+--------------------
+要は一つの大きなパーティションをext3でフォーマットするってこと。SD購入時のままだとパーティションが狂ってることがあるので、リカバリディスク作成用shと同様にsfdiskで作り直しておきます。(自分はそれではまった。パーティションを作らずに直にFS書き込んでる？みたいな状態だったのかな)
+
+もう少し分けても良いかもしれないけど、試しに動かしてみるだけだしこれだけで良しとしました。
+
+== stage3展開してシステム構築
+stage3はftp://ftp.jaist.ac.jp/pub/Linux/Gentoo/releases/arm/autobuilds/のarm5telを使用。展開してchrootる。
+
+システムの設定はx86上でのgentooインストールと同じでOK(まあそれが大変なんだけど)。キーボードは普通にjp106で動きます。
+
+== カーネルビルド
+カーネルソースはareneoのリポジトリに上がってるUbuntu用のを使用しました。
+
+- http://netbook-remix.archive.canonical.com/updates/pool/public/l/linux-fsl-imx51/linux-fsl-imx51_2.6.28-15.50fsl1araneo7.tar.gz
+
+/usr/src/hogeに展開して/usr/src/linuxにジャンクション貼ります。
+
+その後Ubuntu側で
+[source,sh]
+--------------------
+cp /boot/config.2.6.28-15-araneo /mnt/gentoo/usr/src/linux/.config
+--------------------
+してconfigファイル移動。
+
+/usr/src/linuxで
+[source,sh]
+--------------------
+make oldconfig
+make menuconfig(任意)
+make &amp; make modules_install
+cp arch/i386/boot/zImage /boot/zImage
+echo "/boot/zImage noinitrd root=/dev/mmcblk0p1 rw rootfstyppe=ext3 rootwait console=tty1" > /boot/boot.conf
+--------------------
+自分はmenuconfigでuinputをモジュールに設定、ファイルシステムをいくつか追加しておきました。で、zImageをコピーしてインストール、boot.confでカーネルのブートオプションを設定出来るようなので、普通に設定します。カーネルのファイル名はzImageから変えても良い、むしろ変えた方が良い気もします。
+
+更に、再起動した後initがエラー吐きまくったので、/etc/inittabの
+--------------------
+# SERIAL CONSOLE
+--------------------
+に続く二行をコメントアウトしておく。シリアルコンソールが使用不可になるけど全く問題無い。
+
+この地点で、(ちゃんと設定出来てれば)再起動してブートすれば、ネットワークは繋がらないもののログインして普通に作業は出来るはず。
+
+== ネットワークドライバ
+Ubuntu側で、
+[source,sh]
+--------------------
+cp -pr /etc/sdio /media/etc/sdio
+--------------------
+としてドライバの設定ファイル類を移動
+
+chroot下で
+[source,sh]
+--------------------
+echo "alias ks79xx_sdio     eth0" >> /etc/modprobe.conf
+echo "alias ks79xx_sdio     eth0" >> /etc/modules.conf
+--------------------
+としてeth0で無線LANドライバを認識させます。
+
+後はhttp://www.gentoo.org/doc/ja/handbook/handbook-x86.xml?part=4&amp;chap=4辺りに乗っとって無線LANの設定を行います。ちなみにwpa_supplicant使うとクラッシュした・・・。wextにしたのが原因なのかな？
+
+== emerge地獄
+ネットワークが繋がればひたすらにemergeするのみ。お勧めのオプションはこんな感じ。勿論各自最適化を変更したりUSEフラグ追加したりして下さい。
+[source,sh]
+--------------------
+# FILE: /etc/make.conf
+CFLAGS="-O2 -march=armv7-a -mtune=cotex-a8 -s pipe" (容量重視でOsがいいかも)
+CXXFLAGS="-O2 -march=armv7-a -mtune=cotex-a8 -s pipe"
+USE="apm dbus hal consolekit X gtk xfce jpeg svg wifi"
+INPUTS_DEVICES="keyboard mouse mutouch evdev" (evdevだけでもいいかも)
+MAKEOPTS="-j2"
+--------------------
+apmがミソ。サスペンドはACPIでなくAPMで行います。
+
+メジャーなソフトウェアのebuildは大体arm対応してます。xfceとかも問題無く入る。ただ、VLゴシック、UIM、SKKなど、日本語関連のebuildが壊滅してたので、package.keywordで強引に指定。
+--------------------
+media-fonts/vlgothic **
+app-i18n/uim **
+app-i18n/skk-jisyo **
+app-i18n/anthy **
+--------------------
+特に問題なく動いてます。というかVLゴシックなんか機能しない方が恐い。他にも不安定版しか無いのとか有るので、その辺も適宜強引に指定しちゃう。
+
+== Xの設定
+HAL、dbusを起動
+[source,sh]
+--------------------
+/etc/init.d/hald start
+/etc/init.d/dbus start
+rc-update add hald default
+rc-update add dbus default
+--------------------
+おしまい。
+
+ふざけているよう・・・なんだが、これだけで大丈夫です。UbuntuでもXはHALの自動認識のみで動いています。これだけで動くようにシャープもデバイスを選んだのかな？自分は下手にxorg.confを弄ってひたすらはまりました。
+
+== 使ってみて
+まず、サスペンドがapmコマンドからしか出来ない。HAL先生がapmをちゃんと認識してないのかな？
+
+そして、もう一つ、NetWorkmanagerが使えない。araneoリポジトリにあるNetworkmanagerで当たっているのはイーモバイルのパッチで、内蔵無線LANは動くと思うんだけど・・・。nm-appletを起動しても、no device availableと言われる。ifconfigからは認識してるのに。設定ミスかそうでないのか不明。
+
+体感速度的には、ぶっちゃけUbuntuの方が速い。安物のclass6の8GBを使っているけど、microSDの速度がネックなのかも。フラッシュのタイミングを遅らせて、tmpfsを所々使うなど、チューニングすれば改善するかもしれません。内蔵フラッシュに書き込みは怖くて出来ないですw

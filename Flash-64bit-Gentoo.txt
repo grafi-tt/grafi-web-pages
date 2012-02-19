@@ -1,0 +1,8 @@
+= Gentoo64bitでのadobe-flashについて
+
+64bitネイティブのブラウザを使用している場合、www-plugins/nspluginwrapperもemergeしておかないとwww-plugins/adobe-flashが使えないよ、というだけの話。
+
+firefox-binとかで32bit版のブラウザを使ってる人もいるからdependenciesに入ってないのかな。少し迷ってしまった。
+
+== 追記:
+いまは64bitネイティブのadobe-flashがPortageに入ってるのでそっち使うのおすすめ。

@@ -1,0 +1,100 @@
+= RubyのEnumerator.newが素敵な話 =
+
+大学のRubyを使ったプログラミングの入門講義で、友人がsin(x)をテイラー展開して評価するという課題を出されたという。多少手伝いつつ友人が自力でなんとか出来て良かったのだが、どうにもなかなかRubyらしく書けず気持ち悪かった。
+
+特に、テイラー展開の各項の生成過程を、次の項の生成に利用するような書き方をすれば、それが顕著になる。
+
+NOTE: ここからRuby1.9系しか考慮しない話を始める。大抵の大学のシステムはRuby1.8系だろうから、以降のコードはそのままでは大学の課題には使えない。
+
+NOTE: でっかい数値入れたらFloat溢れて死んだけど、その辺のチェックもちゃんとするなら必要。
+
+[source,ruby]
+------------------------------------------------------------------------------
+def taylor_sinx_1(x)
+  ruijo = x.to_f
+  kaijo = 1
+  sign = 1
+  kou = ruijo
+  taylor = kou
+  loop.with_index(1) do |_,n|
+    ruijo *= x**2
+    kaijo *= (2*n)*(2*n+1)
+    sign = -sign
+    kou = ruijo * sign / kaijo
+    return taylor if kou.abs <= Float::EPSILON
+    taylor += kou
+  end
+end
+-------------------------------------------------------------------------------
+
+どうにも気持ち悪い。何が気持ち悪いかって、結局は、各項を生成するループに、各項を足しあわせていくコードが混ざり込んでるのが気持ち悪い。でも、漸化式を回しながら項を生成しているから、普通に関数を作ってループを分離することはできない。
+
+さて、ここでFiberを使えばと思った人も多いはず。フィボナッチ数列の生成に利用するサンプルよく見るし。実際初め僕も使ってみて、かなり綺麗になった。コルーチン素晴らしい。
+
+[source,ruby]
+-------------------------------------------------------------------------------
+def taylor_sinx_2(x)
+  gen = Fiber.new do
+    ruijo = x.to_f
+    kaijo = 1
+    sign = 1
+    loop.with_index(1) do |_,n|
+      Fiber.yield ruijo * sign / kaijo
+      ruijo *= x**2
+      kaijo *= (2*n)*(2*n+1)
+      sign = -sign
+    end
+  end
+  taylor = 0; kou = 0
+  taylor += kou while (kou = gen.resume).abs > Float::EPSILON
+  taylor
+end
+-------------------------------------------------------------------------------
+
+綺麗だけど、while微妙。inject使いたい。無限リストに出来無いの？それEnumerator.newで出来るよ！
+
+[source,ruby]
+-------------------------------------------------------------------------------
+def taylor_sinx_3(x)
+  kous = Enumerator.new do |y|
+    ruijo = x.to_f
+    kaijo = 1
+    sign = 1
+    loop.with_index(1) do |_,n|
+      y << ruijo * sign / kaijo
+      ruijo *= x**2
+      kaijo *= (2*n)*(2*n+1)
+      sign = -sign
+    end
+  end
+  kous.inject{|sum,kou|kou.abs>Float::EPSILON ? sum+=kou : (break sum)}
+end
+-------------------------------------------------------------------------------
+
+見事に遅延評価無限リストっぽいものが出来た。FiberやEnumeratorを使うと漸化式や足し合わせる部分だけを意識してコードを書けるので、見た目が綺麗になるだけでなく、すんなりと混乱せずに書けるというのも嬉しかった。コルーチンは無限リストだけじゃなく様々な用途がある強力なフロー制御だと思うけど、ジェネレータが欲しいときにはEnumerator.newがおいしい場合が多そう。
+
+ほんの少し、より抽象的に書いてみる。
+
+[source,ruby]
+-------------------------------------------------------------------------------
+def taylor_sinx_4(x)
+  kous = Enumerator.new do |y|
+    ruijo = x.to_f
+    kaijo = 1
+    sign = 1
+    calc = ->{ruijo * sign / kaijo}
+    y << calc.call
+    loop.with_index(1) do |_,n|
+      ruijo *= x**2
+      kaijo *= (2*n)*(2*n+1)
+      sign = -sign
+      y << calc.call
+    end
+  end
+  kous.take_while{|kou|kou.abs>Float::EPSILON}.inject(:+)
+end
+-------------------------------------------------------------------------------
+
+take_whileは関数型っぽくて凄くかっこいい。ただ、実際使いどころがそんなにあるのだろうか…という気もする。
+
+Haskellなんかだと、変数を書き換えて漸化式を回すのではなくその部分も無限リストにするのだろうし、こういう手続型と関数型が奇妙に混じったコードはRubyらしいと思う（Pythonもそうかな）。

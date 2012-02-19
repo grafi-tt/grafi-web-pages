@@ -1,0 +1,131 @@
+= Gentoo Advent Calendar 3日目: Overlayの管理
+== Gentoo Advent Calendar
+
+この記事は http://atnd.org/events/10921[Gentoo Advent Calendar] のために書かれました。
+
+== laymanの問題点
+Gentooを使ってると、本家のPortageに入っていないパッケージを使いたくなることが良くあります。でも、何でもかんでも自分でebuildを書くのも面倒だという人のためにあるのがlayman。Overlayを提供するサイトを選択することで、簡単にOverlayをセットアップし、サイト側の更新とsyncすることができます。簡単な解説は http://blog.goo.ne.jp/gleaning/e/f328c5b0841d21689f0f0ec29b29b503[Gentoo customize : layman など - 落穂拾い] などでされています。
+
+しかし、そんな便利なlaymanにも問題があります。それは、本家のPortageツリーに入っているのと同じパッケージがOverlayにも入っていて、かつ本家のPortage側を優先したいときです。普通にするとLaymanで入れたOverlayが優先されるので、上手くいきません。
+
+== そして前置き
+フォーラムの http://forums.gentoo.org/viewtopic-t-842387.html[Gentoo Forums \:: View topic - mask package from an overlay?] でこの問題が取り上げられました。質問者はkde-sunset Overlayのp7zipよりも本家Portageツリーのものを使いたいようです。
+
+と、早速コメントがつきました。
+
+____________________
+Welcome to the piss-poor implementation of overlays for Portage. 
+It has been like this for what now? 3years? it is pathetic! (only now is there glimmers of some resolution) 
+____________________
+
+とりあえず、Overlayの管理の弱さは随分長い間進展のないくそったれな部分のようです。
+
+まあしかし、とりあえずの便法は表れます。make.confに以下の記述をします。
+
+--------------------
+source /var/lib/layman/make.conf 
+PORTDIR_OVERLAY="${PORTDIR_OVERLAY} ${PORTDIR}"
+PORTDIR_OVERLAY="${PORTDIR_OVERLAY} /var/local/portage"
+--------------------
+
+${PORTDIR}は、本家Portageツリーのあるディレクトリ名に展開されます。/var/local/portageは、自分用Overlayのあるディレクトリ名で、環境に合わせて適宜読み替えてください。
+
+この方法のミソは、LaymanがLaymanの管轄下のOverlayのディレクトリ名を環境変数に入れて設定した後ろから、本家Portageツリーのあるディレクトリ名を入れてしまい、Overlayの探索の中に本家ツリーを組み入れてしまうということです。パッケージ探索の速度面でのデメリットはありますし、これは理想的とはいえないですが、まあとりあえずここではよしとします。
+
+だが、それでも問題は残ります。パッケージごとに個別の指定をしたい場合は？Overlayと本家Portageに同じパッケージの同じバージョンが有ったら？
+
+ああだこうだと議論になりましたが、結局、自分用Overlayに適宜シンボリックを張って、強制的にそっちを指定させる、という前近代的な方法が結論となりました。
+
+== そして別のスレッドへ
+また似たような話がフォーラムの http://forums.gentoo.org/viewtopic-t-851662.html[Gentoo Forums \:: View topic - Overlays priority \[solved\]] に現れます。しかし今度はsolvedです。これは期待。
+
+早速コメントが。
+
+____________________
+Welcome to one of the flaws in how Gentoo implemented Overlays and the (lack of) management 
+
+Oh there has been "means to manage them" talked about and promised for months, dare I say years BUT as of yet NOTHING has appeared. 
+It really is quite poor how something that is actually quite crucial to the developement of Gentoo is soo poorly supported 
+____________________
+
+相も変わらずくそったれな話題を続けるなあ。ここはGentooの暗部なんだよ。もうだめだ。とでも言いたげです。さっきのコメントと同じ人です。
+
+== それrepos.confで出来るよ！
+その次の人のコメントには
+
+____________________
+There is a poorly documented way to set an overlay's priority by way of /etc/portage/repos.conf. 
+____________________
+
+と有ります。
+
+Gentooの暗部とか何だったんだ、という話ですね…。
+
+たとえば、sunrise Overlayの優先度を落としたい場合、/etc/portage/repos.confに
+
+--------------------
+[sunrise] 
+priority: 1001
+--------------------
+
+と書けばいいようです。本家Portageツリーのpriorityは1000で、priorityが低いものが優先されます。
+
+--------------------
+emerge --info --verbose
+--------------------
+
+で、このpriorityの情報が見れるとも書いてます。
+
+Portage2.2系列ではいけると書いてましたが、manに載ってたので2.1.9系列でも大丈夫そうです。
+
+さて、PORTAGE_OVERLAYの書き換えよりもスマートな方法はありましたが、パッケージごとに設定することはまだ出来ません。どうしたものか。
+
+== それもPortage2.2で出来るよ！
+さらに、こんなコメントがつきます。
+
+____________________
+Also in portage-2.2 last summers gsoc project to add support for repo deps is partially integrated. I Don't believe it is complete yet. With that integrated you will be able to specify which repo to use, no matter the repo priority setting. 
+____________________
+
+Portage2.2が、任意のOverlayを選択するシンタックスをサポートしたようです。
+
+--------------------
+foo/bar-version:slot::repo
+--------------------
+
+こんな感じの構文が、emergeでも、package.maskとかpackage.unmaskとかでも使えます。
+
+slotとは複数のバージョンのパッケージをシステムの共存させるときに用いるもので、たとえばgccの3系と4系の共存とか、rubyの1.8系と1.9系の共存などに使います。まあこの記事の主題ではありません。 http://d.hatena.ne.jp/kakurasan/20081017/p1[Gentoo Linuxにおけるパッケージ管理について(スロット、tbz2ファイル) - 試験運用中なLinux備忘録)] などで解説されています。
+
+そして、ここで注目すべき機能がrepoの指定です。LaymanでOverlayを選択するときに指定するやつがrepoですし、本家Portageツリーのrepoはgentooです。
+
+コロンの後の文字列がslotと解釈され、コロン二つの後の文字列がrepoと解釈されます。slotもrepoも、コロンをつけないことで省略でき、その場合は以前通りの優先度に従って解釈されます。
+
+このやたら便利な機能をちゃんと使うために、自分用Overlayについても、
+
+--------------------
+echo myrepo > /var/local/portage/profile/repo_name
+--------------------
+
+などとしておきましょう。これで、たとえば、emerge hoge::myrepoとすれば、明示的に自分用Overlayからemerge出来ます。
+
+パッケージ管理は、package.maskに次のように書くなどして実現出来ます。
+
+--------------------
+# Mask all packages of overlay froboz: 
+*/*::froboz 
+# Mask slot 2 of package foo/bar in the main tree (but not in any overlay): 
+foo/bar:2::gentoo
+--------------------
+
+ワイルドカードはslotやrepoの指定よりちょっと前？に入った機能だったと記憶しています。まあとにかく便利です。あまり使いこなせてないのだけど。
+
+== まとめ
+id:meechさんの http://d.hatena.ne.jp/meech/20101211/1292092619[一日目の記事] もPortage2.2がかわいい話でしたし、alphaだけど使ってみると幸せになれそう！
+
+こんな風にGentooは日々進歩してるけど、日本語の解説はどうも数年前の情報が多く、便利な情報が見つかりにくいことも。man portageに載ってるようなことも余り見つかりませんし。そんな訳で、manといった公式のドキュメント見る癖、そしてフォーラムから情報を見つける力も大事だなあ、と思った次第です。
+
+もちろん新しい日本語のドキュメントも充実するに超したことは無いわけで、Gentoo Advent Calendarという企画がその一助になればこれ以上うれしいことは無いです…、などときれい事を言って今日は終わりにします。はい。書き終わったのは12/14ですが、日付は12/13になってます。
+
+== 追記
+見返すと間違いがちらほらあったので修正

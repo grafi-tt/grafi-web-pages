@@ -1,0 +1,91 @@
+= 文字列検索アルゴリズムのAho Corasick法をRubyで適当に実装してみる
+Aho Corasick法は、複数の文字列を高速に検索するアルゴリズムです。簡単に言えば http://ja.wikipedia.org/wiki/%E3%82%AF%E3%83%8C%E3%83%BC%E3%82%B9-%E3%83%A2%E3%83%AA%E3%82%B9-%E3%83%97%E3%83%A9%E3%83%83%E3%83%88%E6%B3%95[クヌース-モリス-プラット法(Wikipedia)] と http://ja.wikipedia.org/wiki/%E3%83%88%E3%83%A9%E3%82%A4%E6%9C%A8[トライ木(Wikipedia)] を合わせたようなアルゴリズムで、KMP法ではマッチに失敗した時の位置を表の形で保持しますが、AhoCorasick法ではこれを「failure link」としてトライ木の上に構築します。なお、この木を利用したこのアルゴリズムは決定性有限オートマトンとして機能します。
+
+failure linkの指す先は、マッチに失敗した文字列の、先頭の一文字を削った時にマッチする位置に相当します。先頭の一文字を削ってもマッチする位置が無いなら二文字、三文字、と削っていった位置に相当し、何文字削ってもマッチしない場合はルートを指すことになります。検索する際はトライ木同様にルートから一文字ずつノードを辿っていくのですが、辿るノードが無い場合は、failure linkを辿った先のノードに対して同じことを再帰的に行います。辿るべきノードが無い場合はルートを辿ることとなります。failure linkを用いて次のマッチ可能な位置を辿ることにより、バックトラックを抑止して高速な検索が可能になります。
+
+AhoCrasick木の構築方法は、まずトライ木を普通に構築し、ルート直下のノードのfailure linkはルートを指すようにします。次に幅優先探索の順で、各ノードのfailure linkを、自ノードの親のfailure linkの指すノードに対して、上記の方法で自ノードが表す文字列を辿ったノードとします。つまり、文字列から最後の一文字を削り、さらに最初の何文字かを削った位置までノードを辿り、そこで最後の一文字をまた足した位置に、failure linkをセットします。なお、この方法では動的な検索文字列の追加には対応出来ません。
+
+さて、Rubyによるコードを以下に示します。Rubyならではの簡潔な記述ですが、本質的に言語に依存する部分は無いので用意に他の言語でも実装出来ると思いす。なお、この実装では、ルートノードのfailure link,親はnilに設定しているので、他の言語で実装する時は、適宜ダミーのノードを指すようにするなりルート自身を指すようにするなりして下さい。
+
+[code,ruby]
+--------------------
+class AhoCorasickTree
+  def initialize(*strs)
+    @root = Node.new(nil)
+    @currentnode = @root
+    strs.each{|str|insert str}
+    reflesh
+  end
+
+  def reflesh
+    queue = Array.new
+    # BFS to first depth
+    @root.each do |c1,n1|
+      n1.failure = @root
+      n1.each{|c2,n2|queue.push [c2,n2]}
+    end
+    # BFS
+    while !queue.empty? do
+      char, node = queue.shift
+      node.each{|c,n|queue.push [c,n]}
+      node.failure = node.parent.failure.find char
+      node.matches.concat node.failure.matches
+    end
+  end
+
+  def insert(str)
+    node = @root
+    str.each_char do |c|
+      node = node.get(c) || node.insert(c)
+    end
+    node.matches.concat [str]
+  end
+
+  def apply(char)
+    (@currentnode = @currentnode.find char).matches
+  end
+
+  class Node
+    def initialize(parent)
+      @children = Hash.new
+      @parent = parent
+      @failure = nil
+      @matches = Array.new
+    end
+    attr_accessor :failure, :matches;
+    attr_reader :parent;
+    def insert(char)
+      @children[char.to_sym] = Node.new(self)
+    end
+    def each(&amp;block)
+      if block
+        @children.each &amp;block
+      else
+        Enumrator.new(self)
+      end
+    end
+    def get(char)
+      @children[char.to_sym]
+    end
+
+    def find(char)
+      @children[char.to_sym] || (failure ? failure.find(char) : self)
+    end
+  end
+end
+--------------------
+
+使用方法は以下のようになります。なお、termをunionした正規表現で検索する方が高速なので、何の役にも立ちません。
+[code,ruby]
+--------------------
+require 'aho_corasick'
+
+terms = %w!hoge fuga piyo foo bar!
+tree = AhoCorasickTree.new(*terms)
+
+str = ARGF.read
+str.each_char do |char|
+  matches = tree.apply char
+  puts matches unless matches.empty?
+end
+--------------------

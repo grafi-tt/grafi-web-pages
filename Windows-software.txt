@@ -1,0 +1,13 @@
+= 自分が使えるWindowsデスクトップにするに当たって必要そうなソフトウェアメモ
+
+色々有ってやっぱり*nixでは無くWindowsデスクトップを使おうかなあと思い、とりあえず必要そうな操作体系の根幹に関わる系統のソフトウェアを以前使ってたの含めメモ。
+
+- gdipp/ezgdi/gdi++(Helium版)
+- のどか
+- ZeniSynth/やまぶき
+- WinSplit+VirtuaWin/DWM for Win + VirutaWin/bugn/etc...
+- CraftLaunch/CraftLaunchex/etc...
+- あふ
+- WindowsPowerShell(いやまあ同梱だけど。使い方勉強しないと。)
+
+google日本語入力でローマ字変換テーブルカスタマイズでオレオレ配列実装か、以前購入したATOK2009とキーフックでオレオレ配列実装か、どちらが快適なのだろう。できればローマ字変換テーブルで処理したいのだが…。

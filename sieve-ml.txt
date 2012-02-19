@@ -1,0 +1,64 @@
+= MLからのメールのフォルダ分けをsieveで完全自動化
+
+僕はメール集約用のIMAPサーバーのLDAとして、Dovecot附属のdeliverを使っている。このdeliverはDovecot附属ということで当然ながらDovecotとの相性は良く、sieveでメールのフィルタリングを行うことが出来るのでprocmailなどと比べて機能上の問題も無い。sieveに対応しているソフトウェアは多く、メールクライアントで対応しているものも有る。
+
+さて、MLからのメールを自動的にMLの名前のフォルダに振り分けるsieveスクリプトが、 http://wiki.exim.org/MailFilteringTips の「here isthe same script translated to Sieve:」以下で公開されていた。ヘッダのlist-idなどや、MLっぽいメールアドレスから正規表現でMLの名前を引っ張り出して、その名前のフォルダに振り分ける。フォルダが存在しない場合の動作はsieveを動かす環境によるだろうが、普通は自動で作成されるとは思う。
+
+そんな感じの便利なスクリプトだが、X-ML-Nameに対応しておらず、またメールアドレスから引っ張り出すのは誤爆の危険が有り、ちゃんとヘッダに情報を入れるMLのみを購読していれば不要なため、少し修正した。
+
+--------------------
+require [ "regex", "variables", "fileinto", "envelope" ];
+
+# lists using x-ml-name
+if exists "x-ml-name" {
+        if header :regex "x-ml-name" "([a-z0-9-]+)" {
+                set :lower "listname" "${1}";
+                fileinto "list.${listname}";
+        } else {
+                fileinto "list.unknown";
+        }
+        stop;}
+# Mailman &amp; other lists using list-id
+elsif exists "list-id" {
+        if header :regex "list-id" "<([a-z0-9-]+)[.@]" {
+                set :lower "listname" "${1}";
+                fileinto "list.${listname}";
+        } else {
+            if header :regex "list-id" "^\\s*<?([a-z0-9-]+)[.@]" {
+                set :lower "listname" "${1}";
+                fileinto "list.${listname}";
+            } else {
+                fileinto "list.unknown";
+            }
+        }
+        stop;}
+# Listar and mailman like
+elsif exists "x-list-id" {
+        if header :regex "x-list-id" "<([a-z0-9-]+)\\\\." {
+                set :lower "listname" "${1}";
+                fileinto "list.${listname}";
+        } else {
+                fileinto "list.unknown";
+        }
+        stop;}
+# Ezmlm
+elsif exists "mailing-list" {
+        if header :regex "mailing-list" "([a-z0-9-]+)@" {
+                set :lower "listname" "${1}";
+                fileinto "list.${listname}";
+        } else {
+                fileinto "list.unknown";
+        }
+        stop;}
+# York lists service
+elsif exists "x-mailing-list" {
+        if header :regex "x-mailing-list" "^\\s*([a-z0-9-]+)@?" {
+                set :lower "listname" "${1}";
+                fileinto "list.${listname}";
+        } else {
+                fileinto "list.unknown";
+        }
+        stop;}
+--------------------
+
+ これを.dovecot.sieveの先頭にでも書いて、貴方も素敵なsieveライフ！

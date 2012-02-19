@@ -1,0 +1,41 @@
+= prgmrにGentoo Linux stage3をインストール
+http://generation1991.g.hatena.ne.jp/watura/20100216/1266298398 に、stacklet.comで配布されているイメージを利用する方法が紹介されていますが、stacklet.comからカーネルだけを取ってきて他は通常のstage3を使い、とりあえずブートしてコンソールに落ちるところまで行けたのでその手順を書きます。なお、カーネルが立ち上がってからログインプロンプトまでの起動途中の画面はコンソールに表示されません。改善する方法有れば教えて欲しい。
+
+まずは、CentOSのrescueから起動。
+[code,sh]
+--------------------
+mkfs -t ext3 /dev/xvda1
+mount /dev/xvda1 /mnt
+cd /mnt
+# stage3,portageはカリフォルニア大学のミラーが同じ西海岸で、かなりの高速が出ました
+wget ftp://ftp.ucsb.edu/pub/mirrors/linux/gentoo/releases/amd64/current-stage3/stage3-amd64-20100325.tar.bz2 #日付は適当に
+wget ftp://ftp.ucsb.edu/pub/mirrors/linux/gentoo/snapshots/portage-latest.tar.bz2
+wget http://stacklet.com/sites/default/files/xen3/kernel/xenU/2.6.31/linux-2.6-xenU.x86-64.tar.bz2
+
+tar -xvjf stage3-amd64-20100325.tar.bz2
+tar -xvjf portage-latest.tar.bz2 -C ./usr
+tar -xvjf linux-2.6-xenU.x86-64.tar.bz2
+--------------------
+
+これでシステムの展開は終了。次にhvc0からコンソールに落ちることが出来るように設定し、ブートローダの設定も行います。
+[code,sh]
+--------------------
+echo hvc0 >> /etc/securetty
+--------------------
+また、/etc/inittabのtty1をhvc0に置換。
+
+/boot/grub/menu.lstを作成し、
+--------------------
+title Gentoo 2.6.31
+root (hd0,0)
+kernel /boot/vmlinuz-2.6.31.6 root=/dev/xvda1 console=/dev/hvc0 ro
+--------------------
+と書きます。
+
+その後忘れずに
+[code,sh]
+--------------------
+chroot /mnt
+passwd
+--------------------
+を実行してパスワードを設定。そしてリブートすれば、無事stage3が立ち上がるはずです。

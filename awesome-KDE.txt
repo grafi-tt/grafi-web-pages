@@ -1,0 +1,24 @@
+= KDEでタイル型WMのawesomeを使う
+といっても特に大したことをする必要は有りません。http://awesome.naquadah.org/wiki/KDE_and_awesomeに記載されているように、~/.kde4/env/ に適当な名前でシェルスクリプトを作成し、
+[code,sh]
+--------------------
+export KDEWM=awesome 
+--------------------
+とすればKDEのWMをawesomeに出来ます。
+
+ただし、これだけではxdg関連の環境変数が設定されずawesomeが起動しなかったので、
+[code,sh]
+--------------------
+export XDG_DATA_HOME=~/.local/share
+export XDG_CONFIG_HOME=~/.config
+--------------------
+と記述したファイルも同じディレクトリに作成しておきました。その他にも、上手く設定されていない環境変数が有れば、同様に設定しておけば良いでしょう。
+
+さて、この状態で起動すれば、上にはawesomeのタスクバーが、下にはKDEのタスクバーが表示されます。そこで、KDEのタスクバーを自動的に隠すように設定します。また、KDEのタスクバーから通知領域を削除しておきます。こうすればawesomeの方に通知が表示されます。
+
+また、rc.luaで、
+[code,lua]
+--------------------
+    awful.key({ modkey },            "r",     function () os.execute("krunner") end ),
+--------------------
+とすれば、Mod+rでKDEのrun command...が起動されるようになります。かなり快適です。
