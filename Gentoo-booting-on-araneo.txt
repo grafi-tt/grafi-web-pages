@@ -18,7 +18,7 @@ mkfs -t ext3 /dev/mmcblkp1
 もう少し分けても良いかもしれないけど、試しに動かしてみるだけだしこれだけで良しとしました。
 
 == stage3展開してシステム構築
-stage3はftp://ftp.jaist.ac.jp/pub/Linux/Gentoo/releases/arm/autobuilds/のarm5telを使用。展開してchrootる。
+stage3は ftp://ftp.jaist.ac.jp/pub/Linux/Gentoo/releases/arm/autobuilds/ のarm5telを使用。展開してchrootる。
 
 システムの設定はx86上でのgentooインストールと同じでOK(まあそれが大変なんだけど)。キーボードは普通にjp106で動きます。
 
@@ -71,7 +71,7 @@ echo "alias ks79xx_sdio     eth0" >> /etc/modules.conf
 --------------------
 としてeth0で無線LANドライバを認識させます。
 
-後はhttp://www.gentoo.org/doc/ja/handbook/handbook-x86.xml?part=4&amp;chap=4辺りに乗っとって無線LANの設定を行います。ちなみにwpa_supplicant使うとクラッシュした・・・。wextにしたのが原因なのかな？
+後は http://www.gentoo.org/doc/ja/handbook/handbook-x86.xml?part=4&chap=4 辺りに乗っとって無線LANの設定を行います。ちなみにwpa_supplicant使うとクラッシュした・・・。wextにしたのが原因なのかな？
 
 == emerge地獄
 ネットワークが繋がればひたすらにemergeするのみ。お勧めのオプションはこんな感じ。勿論各自最適化を変更したりUSEフラグ追加したりして下さい。
