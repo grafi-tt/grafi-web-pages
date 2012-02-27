@@ -9,7 +9,7 @@ Gentooを使ってると、本家のPortageに入っていないパッケージ�
 しかし、そんな便利なlaymanにも問題があります。それは、本家のPortageツリーに入っているのと同じパッケージがOverlayにも入っていて、かつ本家のPortage側を優先したいときです。普通にするとLaymanで入れたOverlayが優先されるので、上手くいきません。
 
 == そして前置き
-フォーラムの http://forums.gentoo.org/viewtopic-t-842387.html[Gentoo Forums \:: View topic - mask package from an overlay?] でこの問題が取り上げられました。質問者はkde-sunset Overlayのp7zipよりも本家Portageツリーのものを使いたいようです。
+フォーラムの http://forums.gentoo.org/viewtopic-t-842387.html[Gentoo Forums &#58;: View topic - mask package from an overlay?] でこの問題が取り上げられました。質問者はkde-sunset Overlayのp7zipよりも本家Portageツリーのものを使いたいようです。
 
 と、早速コメントがつきました。
 
@@ -37,7 +37,8 @@ ${PORTDIR}は、本家Portageツリーのあるディレクトリ名に展開さ
 ああだこうだと議論になりましたが、結局、自分用Overlayに適宜シンボリックを張って、強制的にそっちを指定させる、という前近代的な方法が結論となりました。
 
 == そして別のスレッドへ
-また似たような話がフォーラムの http://forums.gentoo.org/viewtopic-t-851662.html[Gentoo Forums \:: View topic - Overlays priority \[solved\]] に現れます。しかし今度はsolvedです。これは期待。
+また似たような話がフォーラムの
+http://forums.gentoo.org/viewtopic-t-851662.html[Gentoo Forums &#58;: View topic - Overlays priority [solved&#93;] に現れます。しかし今度はsolvedです。これは期待。
 
 早速コメントが。
 

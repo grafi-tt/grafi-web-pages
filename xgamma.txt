@@ -1,7 +1,8 @@
 = xgamma便利！
+
 Xfce4.6になってディスプレイのガンマ設定出来なくなったなー、とか思ってると、xgammaなるものを発見。
 
-[code,sh]
+[source,sh]
 --------------------
 sudo emerge xgmma #aptitudeとかapt-getとかportsとか御自由に
 xgamma -gamma 1.25

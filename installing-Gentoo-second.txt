@@ -7,7 +7,7 @@
 これからはせめて週一回ぐらいには書こう。
 
 == オンボRAID環境での注意
-dmraidを有効にしてカーネルをビルドする必要があります。[http://en.gentoo-wiki.com/wiki/RAID/Onboard]とか[http://en.gentoo-wiki.com/wiki/RAID/NVRAID_with_dmraid]とかの通りにすればおｋ。
+dmraidを有効にしてカーネルをビルドする必要があります。 http://en.gentoo-wiki.com/wiki/RAID/Onboard とか http://en.gentoo-wiki.com/wiki/RAID/NVRAID_with_dmraid とかの通りにすればおｋ。
 [source,sh]
 --------------------
 genkernel --menuconfig --dmraid all
@@ -18,7 +18,7 @@ genkernel --menuconfig --dmraid all
 ハンドブックとかの通りにやってもhwclockがエラー吐いて時計が9時間狂う場合場合かもしれません。(うちの環境では狂った)
 [source,sh]
 --------------------
-echo &quot;rtc-cmos&quot; >> /etc/modules.autoload.d/kernel-2.6
+echo "rtc-cmos"; >> /etc/modules.autoload.d/kernel-2.6
 --------------------
 で直るかと思われます。これで直らなくても「rtcなんたら」という名前のモジュールとかが絡んでる可能性は高い。
 

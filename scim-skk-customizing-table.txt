@@ -1,10 +1,11 @@
 = scim-skkでローマ字入力方式変更
+
 uim-skkでは日本語入力の際のローマ字定義を編集出来て、Wiki等に設定方法が解説されているのですが、scim-skkでは一見そのような設定は出来ないように見えます。しかし、1.3.0としてリリース予定のtrunk版では、対応しているようでした。何とか設定を行うことが出来たので、その方法など書いておきます。
 
 試した環境はgentooですが、ビルドに必要な環境さえ揃えば何でも同じです。
 
 == まずはビルド
-[code,sh]
+[source,sh]
 --------------------
 svn checkout http://svn.sourceforge.jp/svnroot/scim-imengine/scim-skk/trunk
 cd trunk
