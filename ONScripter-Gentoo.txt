@@ -1,4 +1,5 @@
 = GentooでOnscripterを動かしてみる。
+
 ノベルゲームのスクリプトエンジンであるNscripterの、フリーな互換エンジンであるOnscripterをGentooで動かしてみた備忘録。クロスプラットフォームで、当然Linuxも対応してるので動作するのですが、必要なライブラリが多く、Makefileやソースの修正も必要になるなど、ビルドするのに手間取ったので、自分が取った方法をメモしておきます。
 
 == Onscripterのソースのダウンロード
@@ -8,7 +9,8 @@ http://ogapee.at.infoseek.co.jp/onscripter.html#package-source[ONScripter のペ
 avifile以外は普通にemergeするだけです。Vorbis,Luaも、必須にはなって無いけど入れておきます。
 
 avifileはPortageに入っておらず、公式サイトのtarbellも古いので、cvsから落としてきます。
-[code,sh]
+
+[source,sh]
 --------------------
 cvs -z3 -d:pserver:anonymous@avifile.cvs.sourceforge.net:/cvsroot/avifile co avifile
 cd avifile
@@ -20,7 +22,8 @@ sudo make install
 
 == OnscripterのMakefileやソースの修正
 ビルドが通るようにMakefile.linuxを修正します。私の環境ではこれで通りましたが、適宜パスを合わせて下さい。
-[code,makefile]
+
+[source,makefile]
 --------------------
 INCS = `sdl-config --cflags` `smpeg-config --cflags` `avifile-config --cflags` -I/usr/local/include/avifile-0.7 -L /usr/local/lib/avifile-0.7
 LIBS = `sdl-config --libs` `smpeg-config --libs` `avifile-config --libs` -lSDL_ttf -lSDL_image -lSDL_mixer -lbz2 -ljpeg -lm -logg -lvorbis -lvorbisfile -llua
@@ -29,7 +32,7 @@ LIBS = `sdl-config --libs` `smpeg-config --libs` `avifile-config --libs` -lSDL_t
 また、 http://www.mail-archive.com/debian-bugs-rc@lists.debian.org/msg198892.html のパッチを当てます。OnScripterのバージョンによっては不要になっているかもしれません。
 
 == ビルド、実行
-[code,sh]
+[source,sh]
 --------------------
 make -f Makefile.linux
 cp onscripter /hoge/game/fuga #Nscripterを利用したゲームのインストールディレクトリ
