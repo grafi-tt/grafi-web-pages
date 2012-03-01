@@ -1,6 +1,6 @@
 = Gentoo Advent Calendar 3日目: Overlayの管理
-== Gentoo Advent Calendar
 
+== Gentoo Advent Calendar
 この記事は http://atnd.org/events/10921[Gentoo Advent Calendar] のために書かれました。
 
 == laymanの問題点
