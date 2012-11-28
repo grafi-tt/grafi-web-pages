@@ -1,0 +1,37 @@
+= 型クラス多相の型推論について実験
+
+Multi-parameter type classを使う際に、functional dependenciesやtype
+familesを使って型の依存関係を指定してやらないといけないのが良く分からなかった。そんなことしなくても、インスタンス定義に現れた型の組み合わせで絞れば推論できるんじゃないかと。
+
+そんな気の利いたことは簡単にはできないとしたら、一引数の型クラスを使う際にも、インスタンス定義に現れた型で絞り込んで推論するなんてことはできないのだろう。
+
+というわけで試してみたら、予想どおりの結果になった。型推論の理論は全然知らないけど、こういうことをするのは難しいのかな。
+
+[source, haskell]
+--------------------------------------------------------------------------------
+class Hoge a where
+    hogeConst :: a
+
+class Fuga a where
+    fugaId :: a -> a
+
+data A = A deriving Show
+data B = B deriving Show
+data C = C deriving Show
+
+instance Hoge A where
+    hogeConst = A
+instance Hoge B where
+    hogeConst = B
+
+instance Fuga A where
+    fugaId = id
+instance Fuga C where
+    fugaId = id
+
+-- this is error
+-- main = putStrLn . show $ fugaId hogeConst
+
+-- this prints "A"
+main = putStrLn . show $ fugaId (hogeConst :: A)
+--------------------------------------------------------------------------------
